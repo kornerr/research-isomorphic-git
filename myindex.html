@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+    <meta charset="utf-8">
+    <head>
+        <style>
+        </style>
+        <title>Research isomorphic-git</title>
+    </head>
+    <body>
+        <script src="https://unpkg.com/@isomorphic-git/lightning-fs"></script>
+        <script src="https://unpkg.com/isomorphic-git"></script>
+        <script type="text/javascript">
+            // Topic: Create GUID / UUID in JavaScript?
+            // Source: https://stackoverflow.com/a/2117523
+            function generateUUID()
+            {
+                return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(
+                    /[xy]/g,
+                    function(c)
+                    {
+                        var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                        return v.toString(16);
+                    }
+                );
+            }
+            // ReporterSubscription class.
+            
+            function ReporterSubscription(id, callback, reporter)
+            {
+                this.id = id;
+                this.callback = callback;
+                this.reporter = reporter;
+            }
+            
+            // Reporter class.
+            
+            function Reporter(name)
+            {
+                this.name =
+                    (typeof name !== "undefined") ? 
+                    name :
+                    "";
+                this.subscriptions = [];
+            }
+            
+            Reporter.prototype.report = function()
+            {
+                for (var id in this.subscriptions)
+                {
+                    var subscription = this.subscriptions[id];
+                    subscription.callback();
+                }
+            }
+            
+            Reporter.prototype.subscribe = function(callback)
+            {
+                var id = generateUUID();
+                var subscription = new ReporterSubscription(id, callback, this);
+                this.subscriptions.push(subscription);
+                return subscription;
+            }
+
+            var tool = {};
+
+            // Init Git and file system.
+            tool.fs = new LightningFS("fs");
+            git.plugins.set("fs", tool.fs);
+
+            // Make sure directory exists.
+            tool.dir = "/test-isomorphic-git";
+            tool.dirEnsured = new Reporter();
+            tool.ensureDirectory = function()
+            {
+                var self = tool;
+
+                self.fs.mkdir(
+                    self.dir,
+                    function(){
+                        self.dirEnsured.report();
+                    }
+                );
+            };
+            tool.files = [];
+            tool.filesChanged = new Reporter();
+            tool.listDirectory = function()
+            {
+                var self = tool;
+
+                self.fs.readdir(
+                    self.dir,
+                    function(items)
+                    {
+                        if (items)
+                        {
+                            self.files = items;
+                        }
+                        self.filesChanged.report();
+                    }
+                );
+            };
+
+            tool.filesChanged.subscribe(function(){
+                var self = tool;
+                console.log("Files' count: '" + self.files.length + "'");
+                for (var i = 0; i < self.files.length; ++i)
+                {
+                    const name = self.files[i];
+                    console.log("- File id: '" + i + "' name: '" + name + "'");
+                }
+            });
+
+            tool.url = "https://github.com/kornerr/test-isomorphic-git";
+            tool.clone = function()
+            {
+                var self = tool;
+                console.log("00");
+                async(() => {
+                    await
+                        git.clone({
+                            dir: self.dir,
+                            url: self.url,
+                            ref: "master",
+                            singleBranch: true,
+                            depth: 100
+                        }); 
+                    console.log("01");
+                });
+                console.log("02");
+            };
+
+            async function asyncClone()
+            {
+                console.log("async.01");
+                await git.clone({
+                    dir: self.dir,
+                    url: self.url,
+                    ref: "master",
+                    singleBranch: true,
+                    depth: 100
+                }); 
+                console.log("async.02");
+            };
+
+            tool.dirEnsured.subscribe(tool.listDirectory);
+            //tool.filesChanged.subscribe(tool.clone);
+            tool.filesChanged.subscribe(function(){
+                asyncClone();
+            });
+
+            // Run the tool.
+            tool.ensureDirectory();
+        </script>
+    </body>
+</html>

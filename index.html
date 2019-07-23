@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+    <meta charset="utf-8">
+    <head>
+        <style>
+        </style>
+        <title>Research isomorphic-git</title>
+    </head>
+    <body>
+        <input id="repository" placeholder = "Full GitHub repository url (https://github.com/kornerr/test-isomorphic-git)"></input>
+        <input id="username" placeholder="GitHub username"></input>
+        <input id="password" placeholder="GitHub password" type="password"></input>
+        <button onclick="run();">Run</button>
+        <p>NOTE: see console for output</p>
+
+        <script src="https://unpkg.com/@isomorphic-git/lightning-fs"></script>
+        <script src="https://unpkg.com/isomorphic-git"></script>
+        <script type="text/javascript">
+            // Topic: Create GUID / UUID in JavaScript?
+            // Source: https://stackoverflow.com/a/2117523
+            function generateUUID()
+            {
+                return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(
+                    /[xy]/g,
+                    function(c)
+                    {
+                        var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                        return v.toString(16);
+                    }
+                );
+            }
+
+            window.fs = new LightningFS("fs");
+            window.pfs = window.fs.promises;
+            git.plugins.set("fs", window.fs);
+            window.dir = "/";
+
+            async function run()
+            {
+                //window.fs = new LightningFS("fs", {wipe: true});
+                // No need to create root dir, it already exists.
+                //await window.pfs.mkdir(window.dir);
+                var files = await window.pfs.readdir(window.dir);
+                window.url = document.getElementById("repository").value;
+                // No files. Clone new repo.
+                if (!files.length)
+                {
+                    await git.clone({
+                        dir: window.dir,
+                        url: window.url,
+                        ref: "master",
+                        singleBranch: true,
+                        depth: 100,
+                        corsProxy: "https://cors.isomorphic-git.org"
+                    }); 
+                    files = await window.pfs.readdir(window.dir);
+                    console.log("File's count: '" + files.length + "'");
+                    for (var i = 0; i < files.length; ++i)
+                    {
+                        const name = files[i];
+                        console.log("After clone. File id: '" + i + "' name: '" + name + "'");
+                    }
+                }
+                // Now there should be files.
+                // Pull the changes.
+                await git.pull({
+                    dir: window.dir,
+                    url: window.url,
+                    singleBranch: true,
+                    corsProxy: "https://cors.isomorphic-git.org"
+                }); 
+                console.log("After pull. File's count: '" + files.length + "'");
+                for (var i = 0; i < files.length; ++i)
+                {
+                    const name = files[i];
+                    console.log("File id: '" + i + "' name: '" + name + "'");
+                }
+                // Create new file and commit it.
+                window.fileName = generateUUID();
+                window.contents = "New file from isomorphic-git named " + window.fileName;
+                await window.pfs.writeFile(window.dir + window.fileName, window.contents);
+                await git.add({
+                    dir: window.dir,
+                    filepath: window.fileName
+                });
+                const sha = await git.commit({
+                    dir: window.dir,
+                    message: window.contents,
+                    author: {
+                        name: "test-isomorphic-git",
+                        email: "test@isomorphic-git.org"
+                    }
+                });
+                console.log("Committed with SHA hash: '" + sha + "'");
+                // Push.
+                var username = document.getElementById("username").value;
+                var password = document.getElementById("password").value;
+                console.log("Trying to push as '" + username + "'");
+                var result = await git.push({
+                    dir: window.dir,
+                    remote: "origin",
+                    ref: "master",
+                    username: username,
+                    password: password
+                });
+                console.log("Push result. OK: '" + result.ok + "' Errors: '" + result.errors + "'");
+            };
+
+        </script>
+    </body>
+</html>
