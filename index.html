@@ -93,7 +93,8 @@
                 await window.pfs.writeFile(window.dir + window.fileName, window.contents);
                 await git.add({
                     dir: window.dir,
-                    filepath: window.fileName
+                    filepath: window.fileName,
+                    corsProxy: window.corsProxy
                 });
                 const sha = await git.commit({
                     dir: window.dir,
@@ -101,7 +102,8 @@
                     author: {
                         name: "test-isomorphic-git",
                         email: "test@isomorphic-git.org"
-                    }
+                    },
+                    corsProxy: window.corsProxy
                 });
                 console.log("Committed with SHA hash: '" + sha + "'");
                 // Push.
@@ -113,7 +115,8 @@
                     remote: "origin",
                     ref: "master",
                     username: username,
-                    password: password
+                    password: password,
+                    corsProxy: window.corsProxy
                 });
                 console.log("Push result. OK: '" + result.ok + "' Errors: '" + result.errors + "'");
             };
