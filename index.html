@@ -53,6 +53,7 @@
                 var files = await window.pfs.readdir(window.dir);
                 window.url = document.getElementById("repository").value;
                 window.corsProxy = document.getElementById("corsProxy").value;
+                console.log("CORS proxy: '" + window.corsProxy + "'");
                 // No files. Clone new repo.
                 if (!files.length)
                 {
