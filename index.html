@@ -7,11 +7,21 @@
         <title>Research isomorphic-git</title>
     </head>
     <body>
-        <input id="repository" placeholder = "Full GitHub repository url (https://github.com/kornerr/test-isomorphic-git)"></input>
-        <input id="username" placeholder="GitHub username"></input>
-        <input id="password" placeholder="GitHub password" type="password"></input>
-        <button onclick="run();">Run</button>
-        <p>NOTE: see console for output</p>
+        <p>Repository:
+        <input id="repository" value="https://github.com/kornerr/test-isomorphic-git"></input>
+        </p>
+        <p>CORS proxy:
+            <input id=corsProxy" value="https://cors.isomorphic-git.org"></input>
+        <p>GitHub username:
+            <input id="username"></input>
+        </p>
+        <p>GitHub password:
+            <input id="password" type="password"></input>
+        </p>
+        <p>
+            <button onclick="run();">Run</button>
+            <p>NOTE: see console for output</p>
+        </p>
 
         <script src="https://unpkg.com/@isomorphic-git/lightning-fs"></script>
         <script src="https://unpkg.com/isomorphic-git"></script>
@@ -42,6 +52,7 @@
                 //await window.pfs.mkdir(window.dir);
                 var files = await window.pfs.readdir(window.dir);
                 window.url = document.getElementById("repository").value;
+                window.corsProxy = document.getElementById("corsProxy").value;
                 // No files. Clone new repo.
                 if (!files.length)
                 {
@@ -51,7 +62,7 @@
                         ref: "master",
                         singleBranch: true,
                         depth: 100,
-                        corsProxy: "https://cors.isomorphic-git.org"
+                        corsProxy: window.corsProxy
                     }); 
                     files = await window.pfs.readdir(window.dir);
                     console.log("File's count: '" + files.length + "'");
@@ -67,7 +78,7 @@
                     dir: window.dir,
                     url: window.url,
                     singleBranch: true,
-                    corsProxy: "https://cors.isomorphic-git.org"
+                    corsProxy: window.corsProxy
                 }); 
                 console.log("After pull. File's count: '" + files.length + "'");
                 for (var i = 0; i < files.length; ++i)
